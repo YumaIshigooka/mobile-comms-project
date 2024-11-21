@@ -1,5 +1,5 @@
 [![Static Badge](https://img.shields.io/badge/License-MIT_License-orange)](https://opensource.org/license/mit)
-## Mobile Communications' subject Final Project
+# Mobile Communications' subject Final Project
 
 ## Installation (recommended)
 ### Create a Virtual Environment
