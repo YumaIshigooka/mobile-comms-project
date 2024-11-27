@@ -147,7 +147,51 @@ def reuse_factor_9(hex_positions, radius, height, alpha = 1, sigma = 8, nu = 3.8
     return SIRs
 
 
+def Q1_plot(Nc1, Nc3, Nc9):
+    # Function to find the y-value at x = -5
+    def find_y_at_x(sorted_data, cdf, x):
+        idx = np.searchsorted(sorted_data, x, side='left')  # Find where x would fit
+        if idx < len(cdf) and sorted_data[idx] == x:
+            return cdf[idx]
+        elif idx == 0:  # If x is smaller than all data points
+            return 0
+        elif idx == len(cdf):  # If x is larger than all data points
+            return 1
+        else:  # Interpolate between points
+            x0, x1 = sorted_data[idx - 1], sorted_data[idx]
+            y0, y1 = cdf[idx - 1], cdf[idx]
+            return y0 + (x - x0) * (y1 - y0) / (x1 - x0)
 
+    cdf_Nc1 = np.arange(1, len(Nc1) + 1) / len(Nc1)
+    cdf_Nc3 = np.arange(1, len(Nc3) + 1) / len(Nc3)
+    cdf_Nc9 = np.arange(1, len(Nc9) + 1) / len(Nc9)
+
+    # Find the y-values for x = -5
+    x_mark = -5
+    y_Nc1 = find_y_at_x(Nc1, cdf_Nc1, x_mark)
+    y_Nc3 = find_y_at_x(Nc3, cdf_Nc3, x_mark)
+    y_Nc9 = find_y_at_x(Nc9, cdf_Nc9, x_mark)
+
+    # Plot the CDFs
+    plt.figure(figsize=(12, 8))
+    plt.plot(Nc1, cdf_Nc1, marker='o', linestyle='-', label='Nc1', color='blue', markersize=0)
+    plt.plot(Nc3, cdf_Nc3, marker='s', linestyle='-', label='Nc3', color='green', markersize=0)
+    plt.plot(Nc9, cdf_Nc9, marker='^', linestyle='-', label='Nc9', color='red', markersize=0)
+
+    # Mark the points where x = -5
+    for y, label, color in zip([y_Nc1, y_Nc3, y_Nc9], ['Nc1', 'Nc3', 'Nc9'], ['blue', 'green', 'red']):
+        plt.axvline(x=x_mark, color='black', linestyle='--', alpha=0.7)  # Vertical line
+        plt.axhline(y=y, color=color, linestyle='--', alpha=0.7)  # Horizontal line
+        plt.scatter([x_mark], [y], color=color, label=f'{label} at x = {x_mark:.1f}', zorder=5)
+        plt.text(x_mark, y, f'{y:.3f}', fontsize=12, color=color, ha='left', va='bottom', fontweight='bold')
+
+    # Plot customization
+    plt.title('Cumulative Distribution Function (CDF) with Markers', fontsize=16)
+    plt.xlabel('SIR Values (dB)', fontsize=14)
+    plt.ylabel('CDF', fontsize=14)
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.legend(fontsize=12)
+    plt.show()
 
 
 
@@ -159,6 +203,8 @@ def SIR_power_control(hex_positions, radius, height, alpha = 1, sigma = 8, nu = 
     if (N_steps < 0):
         print("Not enough steps")
         return
+    exp_from = float(exp_from)
+    exp_to = float(exp_to)
     exp_steps = (exp_to - exp_from) / N_steps
     print(f"Computing the range [{exp_from:.4}, {exp_to:.4}], using steps of {exp_steps:.4}")
     _range = np.arange(exp_from, exp_to + exp_steps, exp_steps)
@@ -212,7 +258,8 @@ def Q2_plot(SIRs_og, exp_from, exp_to, N_steps):
     # Define a colormap and normalize
     colormap = cm.get_cmap('viridis')  # Choose a colormap
     norm = mcolors.Normalize(vmin=0, vmax=len(SIRs) - 1)  # Normalize indices to colormap range
-
+    y_small = 2
+    x_small = -1
     # Plot each SIR CDF on the same axes with a color scale
     for i, SIRs in enumerate(SIRs):
         # Step 1: Convert to dB and sort
@@ -235,6 +282,11 @@ def Q2_plot(SIRs_og, exp_from, exp_to, N_steps):
 
         # Step 4: Plot on the same figure
         plt.plot(sorted_data, cdf, marker='o', linestyle='-', label=f'Exponent = {(exp_from + i*exp_steps):.3}, y={y_value:.5f}', alpha=0.7, markersize=2, color=color)
+        if (y_value < y_small):
+            y_small = y_value
+            x_small = exp_from + i*exp_steps
+
+    print(f"Smallest y = {y_small}, found at exponent {x_small}")
 
     # Add title, labels, grid, and legend
     plt.title('CDF of SIRs', fontsize=14)
@@ -255,9 +307,6 @@ def Q2(hex_positions, radius, height, alpha = 1, sigma = 8, nu = 3.8, N = 1000, 
     SIRs = SIR_power_control(hex_positions, radius, height, alpha, sigma, nu, N, exp_from, exp_to, N_steps)
     Q2_plot(SIRs, exp_from, exp_to, N_steps)
     return SIRs
-
-
-
 
 def reuse_factor_1_throughput(hex_positions, radius, height, alpha = 1, sigma = 8, nu = 3.8, N = 1000, B = (100 * (10 ** 6)), SNRGap = 4):
     Rs_1 = []
